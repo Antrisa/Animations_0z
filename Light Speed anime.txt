@@ -1,0 +1,107 @@
+import pygame
+import sys
+import random
+import math
+
+# Initialize Pygame
+pygame.init()
+
+# Set up the screen
+width, height = 1000, 1200
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Box Animation")
+
+# Colors
+white = (255, 255, 255)
+black = (0, 0, 0)
+
+# Line variables
+lines = []
+line_speed = 0.01
+max_lines = 10
+max_total_lines = 20
+
+# Rectangle variables
+rect_width, rect_height = 1000, 1200
+rect_outline_width = 5
+rect_color = black
+
+# Stars variables
+stars = [(random.randint(0, width), random.randint(1, height), 255, True, random.uniform(0.1, 1.0)) for _ in range(35)]
+star_fade_speed = 0.5
+
+# Main game loop
+clock = pygame.time.Clock()
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+    # Draw background with fading stars
+    screen.fill(black)
+
+    # Fade stars
+    for i in range(len(stars)):
+        x, y, brightness, increasing, fade_speed = stars[i]
+        if increasing:
+            brightness = min(255, brightness + fade_speed * star_fade_speed)
+            if brightness == 255:
+                increasing = False
+        else:
+            brightness = max(0, brightness - fade_speed * star_fade_speed)
+            if brightness == 0:
+                increasing = True
+        stars[i] = (x, y, brightness, increasing, fade_speed)
+
+    # Draw rectangle with white outline
+    pygame.draw.rect(screen, rect_color, (0, 0, rect_width, rect_height))
+    pygame.draw.rect(screen, white, (0, 0, rect_width, rect_height), rect_outline_width)
+
+    # Spawn new lines
+    for _ in range(max_lines - len(lines)):
+        angle = random.uniform(1, 2 * math.pi)
+        line_length = random.uniform(10, 200)
+        line_thickness = random.uniform(1, 10)
+        line_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        lines.append([width // 2, height // 2, math.cos(angle) * line_length, math.sin(angle) * line_length, line_thickness, line_color])
+
+    # Update line positions
+    for line in lines:
+        line[0] += line[2] * line_speed
+        line[1] += line[3] * line_speed
+
+    # Draw lines
+    for line in lines:
+        pygame.draw.line(screen, line[5], (line[0], line[1]), (line[0] + line[2], line[1] + line[3]), int(line[4]))
+
+    # Draw stars
+    for star in stars:
+        star_color = (int(star[2]), int(star[2]), int(star[2]))
+        pygame.draw.circle(screen, star_color, (star[0], star[1]), 1)
+
+    # Check for collisions with left and right sides
+    for line in lines:
+        if line[0] <= 0 or line[0] >= width:
+            # Increase the number of lines
+            max_lines += 1
+            # Limit the total number of lines
+            if max_lines > max_total_lines:
+                max_lines = max_total_lines
+            # Remove the current line
+            lines.remove(line)
+            # Spawn new lines with even more variations in length and thickness
+            for _ in range(2):
+                new_angle = random.uniform(0, 2 * math.pi)
+                new_line_length = random.uniform(10, 200)
+                new_line_speed = line_speed + 0.01
+                new_line_thickness = random.uniform(1, 10)
+                new_line_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                lines.append([width // 2, height // 2, math.cos(new_angle) * new_line_length, math.sin(new_angle) * new_line_length, new_line_thickness, new_line_color])
+
+    # Update display
+    pygame.display.flip()
+
+    # Cap the frame rate to 144 FPS
+    clock.tick(144)
